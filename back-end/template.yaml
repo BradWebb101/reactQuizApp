@@ -1,0 +1,116 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Straya, know your country
+
+# Table to hold quiz data
+  DDBtable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: StrayaQuiz
+      AttributeDefinitions:
+      - AttributeName: Number
+        AttributeType: I
+      KeySchema:
+      - AttributeName: Number
+        KeyType: HASH
+      BillingMode: PROVISIONED
+      ProvisionedThroughput:
+        ReadCapacityUnits: 2
+        WriteCapacityUnits: 2
+  DependsOn:
+    - DynamoDBScanPolicy
+
+#IAM policy for quering database
+  DynamoDBScanPolicy: 
+    Type: "AWS::IAM::Policy"
+    Properties:
+      PolicyName: DynamoDBScanPolicy
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Action: "dynamodb:Scan"
+            Resource: "*"
+      Roles:
+        - Ref: "DynamoScan"
+
+#IAM role for dynamo scan policy
+  DynamoScan:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+        - Effects: "Allow"
+        Principal:
+          Service: 
+          - "dynamodb.amazonaws.com" 
+        Action:
+        - "sts:AssumeRole"
+      Path: "/"
+
+#Lambda function for scan DBB table
+Resources:
+  InitStateFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: getData/
+      Handler: app.handler
+      MemorySize: 128
+      Runtime: nodejs12.x
+      Environment:
+        Variables:
+          DDB_TABLE_NAME: !Ref DDBtable     
+      Policies:
+      - DynamoDBCrudPolicy:
+          TableName: !Ref DDBtable      
+      Events:
+        InitStateAPI:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /
+            Method: get
+
+
+#API gateway setup for quiz data
+Resources:
+  ApiGatewayApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: prod
+  ApiFunction: # Adds a GET api endpoint at "/" to the ApiGatewayApi via an Api event
+    Type: AWS::Serverless::Function
+    Properties:
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /
+            Method: get
+            RestApiId:
+              Ref: ApiGatewayApi
+
+#Creating IAM role for Api Gateway              
+ApiGatewayIamRole:
+  Type: AWS::IAM::Role
+  Properties:
+    AssumeRolePolicyDocument:
+      Version: '2012-10-17'
+      Statement:
+        - Sid: ''
+          Effect: 'Allow'
+          Principal:
+            Service:
+              - 'apigateway.amazonaws.com'
+          Action:
+            - 'sts:AssumeRole'
+    Path: '/'
+    Policies:
+      - PolicyName: LambdaAccess
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: 'Allow'
+              Action: 'lambda:*'
+              Resource: !GetAtt LambdaFunction.Arn
+
