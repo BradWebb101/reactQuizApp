@@ -17,6 +17,7 @@ correctAnswer: string
 category: string
 }
 
+
 const TOTAL_QUESTIONS = 30;
 
 const App = () => {
@@ -75,7 +76,7 @@ const App = () => {
     <>
     <GlobalStyle />
     <Wrapper>
-      <h1>Straya 'Know your country'</h1>
+      <h1>Straya 'Know my country'</h1>
       {gameOver || userAnswers.length === TOTAL_QUESTIONS ? (
       <button className="start" onClick={startTrivia}>
         Start
@@ -87,6 +88,7 @@ const App = () => {
       <QuestionCard
       questionsNumber={number + 1}
       totalQuestions={TOTAL_QUESTIONS}
+      category = {questions[number].Category}
       question={questions[number].Question}
       answers={questions[number].answers}
       userAnswer={userAnswers ? userAnswers[number] : undefined}

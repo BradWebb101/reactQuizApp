@@ -12,6 +12,7 @@ type Props = {
   userAnswer: AnswerObject | undefined;
   questionsNumber: number;
   totalQuestions: number;
+  category: string
 };
 
 const QuestionCard: React.FC<Props> = ({

@@ -1,7 +1,8 @@
 ##############front-end-deploy
 
 #Load environment variables
-if [ -f .env ]
+if [ -f .env ] 
+
 then
   export $(cat .env | sed 's/#.*//g' | xargs)
 fi
@@ -15,7 +16,7 @@ git config --global credential.helper '!aws codecommit credential-helper $@'
 git config --global credential.UseHttpPath true
 
 # Push to CodeCommit
-cd ../front-end
+cd front-end
 echo AWS Region - $AWS_REGION
 echo Project Name = $PROJECT_NAME
 git push --set-upstream https://git-codecommit.$AWS_REGION.amazonaws.com/v1/repos/$PROJECT_NAME master
